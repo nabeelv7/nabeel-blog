@@ -56,11 +56,93 @@ export default function Counter() {
 
 which renders to:
 
-<div className="border px-5 pb-8">
+<div className="border border-gray-700 rounded px-5 pb-8">
     ### This is a *counter* component
     <Counter />
 </div>
 
 MDX enables us to import and use JSX components *within* markdown.
+To use MDX, install the dependencies.
 
-<Image src={NextJsWallpaper} alt="Nextjs Wallpaper" />
+```bash
+bun install @next/mdx @mdx-js/loader @mdx-js/react
+```
+
+Modify next.config.mjs:
+```js
+import createMDX from '@next/mdx'
+
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+    // allow markdown as page
+    pageExtensions: ["js", "jsx", "md", "mdx"],
+
+    // enable the experimental MDX Rust compiler
+    experimental: {
+        mdxRs: true,
+    }
+};
+
+const withMDX = createMDX({/* config here */})
+
+// export next config with mdx options added
+export default withMDX(nextConfig)
+```
+
+Create a **mdx-components.jsx** file in your root folder (not app/)
+```js
+import CodeBlock from "./components/CodeBlock"
+
+const components = {
+  code: ({ children, className }) => {
+    return (
+      <CodeBlock className={className}>{children}</CodeBlock>
+    )
+  },
+}
+
+export function useMDXComponents() {
+  return components
+}
+```
+We are exporting components, that mdx will compile to. I am using a &lt;CodeBlock /> component.
+Anything inside the triple template literals is rendered as a **&lt;code>*code here*&lt;/code>** element in markdown. So here, anything passed into the <div className="tooltip" data-tip="```CODE HERE```">_triple template literals\*_</div> is passed into the &lt;code> element as children.
+
+```js
+// CodeBlock.jsx
+"use client"
+
+import { CheckIcon, CopyIcon } from "lucide-react"
+import { useState } from "react"
+import { highlight } from "sugar-high"
+
+export default function CodeBlock({ children, className }) {
+  const codeString = typeof children === "string" ? children : String(children)
+  const language = className?.replace("language-", "") || "text"
+  const codeHTML = language == "js" ? highlight(codeString) : codeString;
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(codeString)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error("Copy failed", err)
+    }
+  }
+
+  return (
+    <code className="relative w-full lg:text-xl block">
+      <button
+        onClick={handleCopy}
+        className="absolute top-1 cursor-pointer right-2 text-xs rounded"
+      >
+        {copied ? <CheckIcon /> : <CopyIcon />}
+      </button>
+      <div className="overflow-x-auto" dangerouslySetInnerHTML={{ __html: codeHTML }}></div>
+    </code>
+  )
+}
+
+```

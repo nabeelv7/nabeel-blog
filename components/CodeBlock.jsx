@@ -1,6 +1,6 @@
 "use client"
 
-import { CheckIcon, CopyCheckIcon, CopyIcon } from "lucide-react"
+import { CheckIcon, CopyIcon } from "lucide-react"
 import { useState } from "react"
 import { highlight } from "sugar-high"
 
